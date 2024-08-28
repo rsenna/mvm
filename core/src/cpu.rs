@@ -14,16 +14,15 @@ struct Cpu {
 }
 
 impl Cpu {
-    fn new(code: Vec<u8>) -> Self {
-        let mut regs = [0; 32];
-        regs[0] = 0;
-        regs[2] = DRAM_SIZE - 1;
+    fn new(dram: Vec<u8>) -> Self {
+        let mut data = [0; 32];
+        data[0] = 0;
+        data[2] = DRAM_SIZE - 1;
 
-        let result = Self {
-            registers: Registers64 { data: regs },
-            dram: code
-        };
-        result
+        let mut pc: u64 = 0;
+        let registers = Registers64 { data, pc };
+
+        Self { registers, dram }
     }
 
 /*    fn execute(&mut self, inst: u32) {

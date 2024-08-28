@@ -3,6 +3,7 @@ use phf::phf_map;
 type Register64 = u64;
 
 pub struct Registers64 {
+    pub pc: Register64,
     pub data: [Register64; 32]
 }
 
@@ -57,6 +58,10 @@ static REGISTERS_BASE_MAP: phf::Map<&'static str, RegisterMapItem> = phf_map! {
 
 impl Registers64 {
     pub fn get(&self, reg: &str) -> Register64 {
+        if reg == "pc" {
+            return self.pc
+        }
+
         let index = REGISTERS_BASE_MAP
             .into_iter()
             .find_map(|(str, it)|
