@@ -13,7 +13,6 @@ struct Cpu {
     dram: Vec<u8>,
 }
 
-
 impl Cpu {
     fn new(code: Vec<u8>) -> Self {
         let mut regs = [0; 32];
