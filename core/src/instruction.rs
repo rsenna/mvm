@@ -1,4 +1,5 @@
 use crate::instruction::Instruction32::Unknown;
+
 use bitfield::bitfield;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
@@ -24,16 +25,61 @@ macro_rules! impl_traits {
     };
 }
 
-pub const OPCODE_NULL: u8 = 0;
-pub const OPCODE_LOAD: u8 = 0b0000011;
+pub const OPCODE_NULL:           u8 =         0;
+pub const OPCODE_LOAD:           u8 = 0b0000011;
 pub const OPCODE_ARITHMETIC_IMM: u8 = 0b0010011;
-pub const OPCODE_AUIPC: u8 = 0b0010111;
-pub const OPCODE_STORE: u8 = 0b0100011;
-pub const OPCODE_ARITHMETIC: u8 = 0b0110011;
-pub const OPCODE_LUI: u8 = 0b0110111;
-pub const OPCODE_BRANCH: u8 = 0b1100011;
-pub const OPCODE_JALR: u8 = 0b1100111;
-pub const OPCODE_JAL: u8 = 0b1101111;
+pub const OPCODE_AUIPC:          u8 = 0b0010111;
+pub const OPCODE_STORE:          u8 = 0b0100011;
+pub const OPCODE_ARITHMETIC:     u8 = 0b0110011;
+pub const OPCODE_LUI:            u8 = 0b0110111;
+pub const OPCODE_BRANCH:         u8 = 0b1100011;
+pub const OPCODE_JALR:           u8 = 0b1100111;
+pub const OPCODE_JAL:            u8 = 0b1101111;
+
+pub enum Funct3Op {
+    AddOrSub = 0,
+    Sll      = 1,
+    Slt      = 2,
+    Sltu     = 3,
+    Xor      = 4,
+    SraSrl   = 5,
+    Or       = 6,
+    And      = 7,
+}
+
+pub enum Funct3Branch {
+    Beq  = 0,
+    Bne  = 1,
+    Blt  = 4,
+    Bge  = 5,
+    Bltu = 6,
+    Bgeu = 7,
+}
+
+pub enum Funct3Load {
+    Lb  = 0,
+    Lh  = 1,
+    Lw  = 2,
+    Lbu = 4,
+    Lhu = 5,
+}
+
+pub enum Funct3Store {
+    Sb = 0,
+    Sh = 1,
+    Sw = 2,
+}
+
+pub enum Funct3System {
+    // If the last 12 bits are 0, then it is ECALL otherwise EBREAK.:
+    EcallEbreak = 0,
+    Csrrw       = 1,
+    Csrrs       = 2,
+    Csrrc       = 3,
+    Csrrwi      = 5,
+    Csrrsi      = 6,
+    Csrrci      = 7,
+}
 
 pub type Raw32 = u32;
 
@@ -147,8 +193,8 @@ impl_traits!(UType32);
 impl_traits!(JType32);
 impl_traits!(Imm);
 
-// TODO variable instruction length; see https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf
-//      page 5
+// TODO variable instruction length;
+//      see https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf page 5
 
 impl From<u8> for Opcode7 {
     fn from(value: u8) -> Self {
