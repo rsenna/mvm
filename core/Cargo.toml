@@ -4,5 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.86"
 bitfield = "0.16.1"
-phf = { version = "0.11", features = ["macros"] }
+crossbeam = "0.8.4"
+itertools = "0.13.0"
+phf = { version = "0.11.2", features = ["macros"] }
+strum_macros = { version = "0.26.3" }
