@@ -1,13 +1,8 @@
-// TODO variable instruction length; see https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf
-//      page 5
-
 use crate::instruction::Instruction32::Unknown;
 use bitfield::bitfield;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use strum_macros::Display;
-
-pub type Raw32 = u32;
 
 macro_rules! impl_traits {
     ($t: ident) => {
@@ -29,27 +24,22 @@ macro_rules! impl_traits {
     };
 }
 
+pub const OPCODE_NULL: u8 = 0;
+pub const OPCODE_LOAD: u8 = 0b0000011;
+pub const OPCODE_ARITHMETIC_IMM: u8 = 0b0010011;
+pub const OPCODE_AUIPC: u8 = 0b0010111;
+pub const OPCODE_STORE: u8 = 0b0100011;
+pub const OPCODE_ARITHMETIC: u8 = 0b0110011;
+pub const OPCODE_LUI: u8 = 0b0110111;
+pub const OPCODE_BRANCH: u8 = 0b1100011;
+pub const OPCODE_JALR: u8 = 0b1100111;
+pub const OPCODE_JAL: u8 = 0b1101111;
+
+pub type Raw32 = u32;
+
 bitfield! {
     pub struct Opcode7(u8);
     pub u8, get, set: 6, 0;
-}
-
-impl From<u8> for Opcode7 {
-    fn from(value: u8) -> Self {
-        Opcode7(value)
-    }
-}
-
-impl From<Opcode7> for u8 {
-    fn from(value: Opcode7) -> Self {
-        value.0
-    }
-}
-
-impl Debug for Opcode7 {
-    fn fmt(&self, form: &mut Formatter<'_>) -> fmt::Result {
-        form.debug_tuple("Opcode7").field(&self.0).finish()
-    }
 }
 
 bitfield! {
@@ -125,14 +115,17 @@ bitfield! {
     imm_b31, set_imm_b31: 31;
 }
 
-impl_traits!(Opcode7);
-impl_traits!(RType32);
-impl_traits!(IType32);
-impl_traits!(SType32);
-impl_traits!(BType32);
-impl_traits!(UType32);
-impl_traits!(JType32);
-impl_traits!(Imm);
+bitfield! {
+    pub struct Imm(Raw32);
+    impl Debug;
+    bit0, set_bit0: 0;
+    u8, seq_b4_1, set_seq_b4_1: 4, 1;
+    u8, seq_b10_5, set_seq_b10_5: 10, 5;
+    bit11, set_bit11: 11;
+    u8, seq_b19_12, set_seq_b19_12: 19, 12;
+    u16, seq_b30_20, set_seq_b30_20: 30, 20;
+    bit31, set_bit31: 31;
+}
 
 #[derive(Debug, PartialEq, Display)]
 pub enum Instruction32 {
@@ -145,27 +138,34 @@ pub enum Instruction32 {
     Unknown(Raw32),
 }
 
-pub const OPCODE_NULL: u8 = 0;
-pub const OPCODE_LOAD: u8 = 0b0000011;
-pub const OPCODE_ARITHMETIC_IMM: u8 = 0b0010011;
-pub const OPCODE_AUIPC: u8 = 0b0010111;
-pub const OPCODE_STORE: u8 = 0b0100011;
-pub const OPCODE_ARITHMETIC: u8 = 0b0110011;
-pub const OPCODE_LUI: u8 = 0b0110111;
-pub const OPCODE_BRANCH: u8 = 0b1100011;
-pub const OPCODE_JALR: u8 = 0b1100111;
-pub const OPCODE_JAL: u8 = 0b1101111;
+impl_traits!(Opcode7);
+impl_traits!(RType32);
+impl_traits!(IType32);
+impl_traits!(SType32);
+impl_traits!(BType32);
+impl_traits!(UType32);
+impl_traits!(JType32);
+impl_traits!(Imm);
 
-bitfield! {
-    pub struct Imm(Raw32);
-    impl Debug;
-    bit0, set_bit0: 0;
-    u8, seq_b4_1, set_seq_b4_1: 4, 1;
-    u8, seq_b10_5, set_seq_b10_5: 10, 5;
-    bit11, set_bit11: 11;
-    u8, seq_b19_12, set_seq_b19_12: 19, 12;
-    u16, seq_b30_20, set_seq_b30_20: 30, 20;
-    bit31, set_bit31: 31;
+// TODO variable instruction length; see https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf
+//      page 5
+
+impl From<u8> for Opcode7 {
+    fn from(value: u8) -> Self {
+        Opcode7(value)
+    }
+}
+
+impl From<Opcode7> for u8 {
+    fn from(value: Opcode7) -> Self {
+        value.0
+    }
+}
+
+impl Debug for Opcode7 {
+    fn fmt(&self, form: &mut Formatter<'_>) -> fmt::Result {
+        form.debug_tuple("Opcode7").field(&self.0).finish()
+    }
 }
 
 impl From<Raw32> for Instruction32 {
