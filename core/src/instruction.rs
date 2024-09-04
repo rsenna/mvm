@@ -1,8 +1,9 @@
-use crate::instruction::Instruction32::Unknown;
-
-use bitfield::bitfield;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
+
+use bitfield::bitfield;
+use enum_primitive_derive::Primitive;
+use num_traits::{FromPrimitive, ToPrimitive};
 use strum_macros::Display;
 
 macro_rules! impl_traits {
@@ -25,28 +26,43 @@ macro_rules! impl_traits {
     };
 }
 
-pub const OPCODE_NULL:           u8 =         0;
-pub const OPCODE_LOAD:           u8 = 0b0000011;
-pub const OPCODE_ARITHMETIC_IMM: u8 = 0b0010011;
-pub const OPCODE_AUIPC:          u8 = 0b0010111;
-pub const OPCODE_STORE:          u8 = 0b0100011;
-pub const OPCODE_ARITHMETIC:     u8 = 0b0110011;
-pub const OPCODE_LUI:            u8 = 0b0110111;
-pub const OPCODE_BRANCH:         u8 = 0b1100011;
-pub const OPCODE_JALR:           u8 = 0b1100111;
-pub const OPCODE_JAL:            u8 = 0b1101111;
+pub const INVALID_OPCODE7: Opcode7 = Opcode7(0);
 
-pub enum Funct3Op {
-    AddOrSub = 0,
-    Sll      = 1,
-    Slt      = 2,
-    Sltu     = 3,
-    Xor      = 4,
-    SraSrl   = 5,
-    Or       = 6,
-    And      = 7,
+#[derive(Debug, Eq, PartialEq, Primitive)]
+pub enum InstructionSize {
+    Byte       =  8,
+    HalfWord   = 16,
+    Word       = 32,
+    DoubleWord = 64,
 }
 
+#[derive(Debug, Eq, PartialEq, Primitive)]
+pub enum OpcodeType {
+    Null                  = 0,         //  TODO: remove Null, use Option<OpcodeType>
+    AddUpperImmediateToPC = 0b0010111, //  23
+    Arithmetic            = 0b0110011, //  51
+    ArithmeticImmediate   = 0b0010011, //  19
+    Branch                = 0b1100011, //  99
+    JumpAndLink           = 0b1101111, // 111
+    JumpAndLinkRegister   = 0b1100111, // 103
+    Load                  = 0b0000011, //   3
+    LoadUpperImmediate    = 0b0110111, //  55
+    Store                 = 0b0100011, //  35
+}
+
+#[derive(Debug, Eq, PartialEq, Primitive)]
+pub enum Funct3Op {
+    AddSub = 0,
+    Sll    = 1,
+    Slt    = 2,
+    Sltu   = 3,
+    Xor    = 4,
+    SraSrl = 5,
+    Or     = 6,
+    And    = 7,
+}
+
+#[derive(Debug, Eq, PartialEq, Primitive)]
 pub enum Funct3Branch {
     Beq  = 0,
     Bne  = 1,
@@ -56,6 +72,7 @@ pub enum Funct3Branch {
     Bgeu = 7,
 }
 
+#[derive(Debug, Eq, PartialEq, Primitive)]
 pub enum Funct3Load {
     Lb  = 0,
     Lh  = 1,
@@ -64,12 +81,14 @@ pub enum Funct3Load {
     Lhu = 5,
 }
 
+#[derive(Debug, Eq, PartialEq, Primitive)]
 pub enum Funct3Store {
     Sb = 0,
     Sh = 1,
     Sw = 2,
 }
 
+#[derive(Debug, Eq, PartialEq, Primitive)]
 pub enum Funct3System {
     // If the last 12 bits are 0, then it is ECALL otherwise EBREAK.:
     EcallEbreak = 0,
@@ -79,6 +98,17 @@ pub enum Funct3System {
     Csrrwi      = 5,
     Csrrsi      = 6,
     Csrrci      = 7,
+}
+
+#[derive(Debug, PartialEq, Display)]
+pub enum Instruction32 {
+    R(RType32),
+    I(IType32),
+    S(SType32),
+    B(BType32),
+    U(UType32),
+    J(JType32),
+    Invalid(Raw32),
 }
 
 pub type Raw32 = u32;
@@ -173,17 +203,6 @@ bitfield! {
     bit31, set_bit31: 31;
 }
 
-#[derive(Debug, PartialEq, Display)]
-pub enum Instruction32 {
-    R(RType32),
-    I(IType32),
-    S(SType32),
-    B(BType32),
-    U(UType32),
-    J(JType32),
-    Unknown(Raw32),
-}
-
 impl_traits!(Opcode7);
 impl_traits!(RType32);
 impl_traits!(IType32);
@@ -202,9 +221,21 @@ impl From<u8> for Opcode7 {
     }
 }
 
+impl From<OpcodeType> for Opcode7 {
+    fn from(value: OpcodeType) -> Self {
+        Opcode7(value.to_u8().unwrap())
+    }
+}
+
 impl From<Opcode7> for u8 {
-    fn from(value: Opcode7) -> Self {
-        value.0
+    fn from(Opcode7(value): Opcode7) -> Self {
+        value
+    }
+}
+
+impl From<OpcodeType> for u8 {
+    fn from(value: OpcodeType) -> Self {
+        value.to_u8().unwrap()
     }
 }
 
@@ -217,16 +248,24 @@ impl Debug for Opcode7 {
 impl From<Raw32> for Instruction32 {
     fn from(value: Raw32) -> Self {
         let r_type_value = RType32(value);
-        let opcode: u8 = r_type_value.opcode().into();
+        let Opcode7(opcode) = r_type_value.opcode();
+        let opcode_type = OpcodeType::from_u8(opcode).unwrap_or(OpcodeType::Null);
 
-        match opcode {
-            OPCODE_ARITHMETIC_IMM | OPCODE_JALR | OPCODE_LOAD => Instruction32::I(IType32(value)),
-            OPCODE_ARITHMETIC => Instruction32::R(r_type_value),
-            OPCODE_JAL => Instruction32::J(JType32(value)),
-            OPCODE_LUI | OPCODE_AUIPC => Instruction32::U(UType32(value)),
-            OPCODE_BRANCH => Instruction32::B(BType32(value)),
-            OPCODE_STORE => Instruction32::S(SType32(value)),
-            _ => Unknown(value),
+        match opcode_type {
+            OpcodeType::ArithmeticImmediate | OpcodeType::JumpAndLinkRegister | OpcodeType::Load =>
+                Instruction32::I(IType32(value)),
+            OpcodeType::Arithmetic =>
+                Instruction32::R(r_type_value), // we already have this one declared above...
+            OpcodeType::JumpAndLink =>
+                Instruction32::J(JType32(value)),
+            OpcodeType::LoadUpperImmediate | OpcodeType::AddUpperImmediateToPC =>
+                Instruction32::U(UType32(value)),
+            OpcodeType::Branch =>
+                Instruction32::B(BType32(value)),
+            OpcodeType::Store =>
+                Instruction32::S(SType32(value)),
+            _ =>
+                Instruction32::Invalid(value),
         }
     }
 }
@@ -240,7 +279,7 @@ impl Instruction32 {
             Instruction32::B(b) => b.opcode(),
             Instruction32::U(u) => u.opcode(),
             Instruction32::J(j) => j.opcode(),
-            _ => Opcode7(OPCODE_NULL),
+            _ => INVALID_OPCODE7,
         }
     }
 
