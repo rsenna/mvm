@@ -1,8 +1,8 @@
-use crate::instruction::{Instruction32, Raw32};
+use crate::instruction::{InstructionFormat32, Word};
 use crate::machine::Byte;
 use crate::register::{RegisterValue64, Registers64, RegistersArray64};
 
-pub type Instruction = Instruction32;
+pub type Instruction = InstructionFormat32;
 pub type RegisterValue = RegisterValue64;
 pub type Registers = Registers64;
 pub type RegistersArray = RegistersArray64;
@@ -30,7 +30,7 @@ impl Hart for SimpleHart {
     // This routine only works for 32 bits instructions
     fn fetch(&self) -> Instruction {
         let index = self.registers.pc as usize;
-        let data: Raw32 = self.ram[index] as u32
+        let data: Word = self.ram[index] as u32
             | (self.ram[index + 1] as u32) << 8
             | (self.ram[index + 2] as u32) << 16
             | (self.ram[index + 3] as u32) << 24;
