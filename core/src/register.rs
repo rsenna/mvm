@@ -1,47 +1,231 @@
+/*
+ * Copyright ©️ 2024 Rogério Senna. All rights reserved.
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+ * the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ * https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and
+ * limitations under the Licence.
+ *
+ */
+
 use phf::phf_map;
 use std::iter::Iterator;
 
 pub const REGISTERS_COUNT: usize = 30; // ignore PC and ZERO
 
-pub const PC: RT = RT { pos: -2, abi: "pc", id: "", saved_by: SavedBy::None };
-pub const ZERO: RT = RT { pos: -1, abi: "zero", id: "x01", saved_by: SavedBy::None };
-pub const RA: RT = RT { pos: 0, abi: "ra", id: "x02", saved_by: SavedBy::Caller };
-pub const SP: RT = RT { pos: 1, abi: "sp", id: "x03", saved_by: SavedBy::Callee };
-pub const GP: RT = RT { pos: 2, abi: "gp", id: "x04", saved_by: SavedBy::None };
-pub const TP: RT = RT { pos: 3, abi: "tp", id: "x05", saved_by: SavedBy::None };
-pub const T0: RT = RT { pos: 4, abi: "t0", id: "x06", saved_by: SavedBy::Caller };
-pub const T1: RT = RT { pos: 5, abi: "t1", id: "x07", saved_by: SavedBy::Caller };
-pub const T2: RT = RT { pos: 6, abi: "t2", id: "x08", saved_by: SavedBy::Caller };
-pub const S0_FP: RT = RT { pos: 7, abi: "s0 / fp", id: "x09", saved_by: SavedBy::Callee };
-pub const S1: RT = RT { pos: 8, abi: "s1", id: "x10", saved_by: SavedBy::Callee };
-pub const A0: RT = RT { pos: 9, abi: "a0", id: "x11", saved_by: SavedBy::Caller };
-pub const A1: RT = RT { pos: 10, abi: "a1", id: "x12", saved_by: SavedBy::Caller };
-pub const A2: RT = RT { pos: 11, abi: "a2", id: "x13", saved_by: SavedBy::Caller };
-pub const A3: RT = RT { pos: 12, abi: "a3", id: "x14", saved_by: SavedBy::Caller };
-pub const A4: RT = RT { pos: 13, abi: "a4", id: "x15", saved_by: SavedBy::Caller };
-pub const A5: RT = RT { pos: 14, abi: "a5", id: "x16", saved_by: SavedBy::Caller };
-pub const A6: RT = RT { pos: 15, abi: "a6", id: "x17", saved_by: SavedBy::Caller };
-pub const A7: RT = RT { pos: 16, abi: "a7", id: "x18", saved_by: SavedBy::Caller };
-pub const S2: RT = RT { pos: 17, abi: "s2", id: "x19", saved_by: SavedBy::Callee };
-pub const S3: RT = RT { pos: 18, abi: "s3", id: "x20", saved_by: SavedBy::Callee };
-pub const S4: RT = RT { pos: 19, abi: "s4", id: "x21", saved_by: SavedBy::Callee };
-pub const S5: RT = RT { pos: 20, abi: "s5", id: "x22", saved_by: SavedBy::Callee };
-pub const S6: RT = RT { pos: 21, abi: "s6", id: "x23", saved_by: SavedBy::Callee };
-pub const S7: RT = RT { pos: 22, abi: "s7", id: "x24", saved_by: SavedBy::Callee };
-pub const S8: RT = RT { pos: 23, abi: "s8", id: "x25", saved_by: SavedBy::Callee };
-pub const S9: RT = RT { pos: 24, abi: "s9", id: "x26", saved_by: SavedBy::Callee };
-pub const S10: RT = RT { pos: 25, abi: "s10", id: "x27", saved_by: SavedBy::Callee };
-pub const S11: RT = RT { pos: 26, abi: "s11", id: "x28", saved_by: SavedBy::Callee };
-pub const T3: RT = RT { pos: 27, abi: "t3", id: "x29", saved_by: SavedBy::Caller };
-pub const T4: RT = RT { pos: 28, abi: "t4", id: "x30", saved_by: SavedBy::Caller };
-pub const T5: RT = RT { pos: 29, abi: "t5", id: "x31", saved_by: SavedBy::Caller };
-pub const T6: RT = RT { pos: 30, abi: "t6", id: "x32", saved_by: SavedBy::Caller };
+pub const PC: RT = RT {
+    pos: -2,
+    abi: "pc",
+    id: "",
+    saved_by: SavedBy::None,
+};
+pub const ZERO: RT = RT {
+    pos: -1,
+    abi: "zero",
+    id: "x01",
+    saved_by: SavedBy::None,
+};
+pub const RA: RT = RT {
+    pos: 0,
+    abi: "ra",
+    id: "x02",
+    saved_by: SavedBy::Caller,
+};
+pub const SP: RT = RT {
+    pos: 1,
+    abi: "sp",
+    id: "x03",
+    saved_by: SavedBy::Callee,
+};
+pub const GP: RT = RT {
+    pos: 2,
+    abi: "gp",
+    id: "x04",
+    saved_by: SavedBy::None,
+};
+pub const TP: RT = RT {
+    pos: 3,
+    abi: "tp",
+    id: "x05",
+    saved_by: SavedBy::None,
+};
+pub const T0: RT = RT {
+    pos: 4,
+    abi: "t0",
+    id: "x06",
+    saved_by: SavedBy::Caller,
+};
+pub const T1: RT = RT {
+    pos: 5,
+    abi: "t1",
+    id: "x07",
+    saved_by: SavedBy::Caller,
+};
+pub const T2: RT = RT {
+    pos: 6,
+    abi: "t2",
+    id: "x08",
+    saved_by: SavedBy::Caller,
+};
+pub const S0_FP: RT = RT {
+    pos: 7,
+    abi: "s0 / fp",
+    id: "x09",
+    saved_by: SavedBy::Callee,
+};
+pub const S1: RT = RT {
+    pos: 8,
+    abi: "s1",
+    id: "x10",
+    saved_by: SavedBy::Callee,
+};
+pub const A0: RT = RT {
+    pos: 9,
+    abi: "a0",
+    id: "x11",
+    saved_by: SavedBy::Caller,
+};
+pub const A1: RT = RT {
+    pos: 10,
+    abi: "a1",
+    id: "x12",
+    saved_by: SavedBy::Caller,
+};
+pub const A2: RT = RT {
+    pos: 11,
+    abi: "a2",
+    id: "x13",
+    saved_by: SavedBy::Caller,
+};
+pub const A3: RT = RT {
+    pos: 12,
+    abi: "a3",
+    id: "x14",
+    saved_by: SavedBy::Caller,
+};
+pub const A4: RT = RT {
+    pos: 13,
+    abi: "a4",
+    id: "x15",
+    saved_by: SavedBy::Caller,
+};
+pub const A5: RT = RT {
+    pos: 14,
+    abi: "a5",
+    id: "x16",
+    saved_by: SavedBy::Caller,
+};
+pub const A6: RT = RT {
+    pos: 15,
+    abi: "a6",
+    id: "x17",
+    saved_by: SavedBy::Caller,
+};
+pub const A7: RT = RT {
+    pos: 16,
+    abi: "a7",
+    id: "x18",
+    saved_by: SavedBy::Caller,
+};
+pub const S2: RT = RT {
+    pos: 17,
+    abi: "s2",
+    id: "x19",
+    saved_by: SavedBy::Callee,
+};
+pub const S3: RT = RT {
+    pos: 18,
+    abi: "s3",
+    id: "x20",
+    saved_by: SavedBy::Callee,
+};
+pub const S4: RT = RT {
+    pos: 19,
+    abi: "s4",
+    id: "x21",
+    saved_by: SavedBy::Callee,
+};
+pub const S5: RT = RT {
+    pos: 20,
+    abi: "s5",
+    id: "x22",
+    saved_by: SavedBy::Callee,
+};
+pub const S6: RT = RT {
+    pos: 21,
+    abi: "s6",
+    id: "x23",
+    saved_by: SavedBy::Callee,
+};
+pub const S7: RT = RT {
+    pos: 22,
+    abi: "s7",
+    id: "x24",
+    saved_by: SavedBy::Callee,
+};
+pub const S8: RT = RT {
+    pos: 23,
+    abi: "s8",
+    id: "x25",
+    saved_by: SavedBy::Callee,
+};
+pub const S9: RT = RT {
+    pos: 24,
+    abi: "s9",
+    id: "x26",
+    saved_by: SavedBy::Callee,
+};
+pub const S10: RT = RT {
+    pos: 25,
+    abi: "s10",
+    id: "x27",
+    saved_by: SavedBy::Callee,
+};
+pub const S11: RT = RT {
+    pos: 26,
+    abi: "s11",
+    id: "x28",
+    saved_by: SavedBy::Callee,
+};
+pub const T3: RT = RT {
+    pos: 27,
+    abi: "t3",
+    id: "x29",
+    saved_by: SavedBy::Caller,
+};
+pub const T4: RT = RT {
+    pos: 28,
+    abi: "t4",
+    id: "x30",
+    saved_by: SavedBy::Caller,
+};
+pub const T5: RT = RT {
+    pos: 29,
+    abi: "t5",
+    id: "x31",
+    saved_by: SavedBy::Caller,
+};
+pub const T6: RT = RT {
+    pos: 30,
+    abi: "t6",
+    id: "x32",
+    saved_by: SavedBy::Caller,
+};
 
 static REGISTERS_BASE_MAP: phf::Map<&'static str, &RT> = phf_map! {
     "pc" => &PC, "zero" => &ZERO, "ra" => &RA, "sp" => &SP, "gp" => &GP, "tp" => &TP,
     "t0" => &T0, "t1" => &T1, "t2" => &T2,
     "s0 / fp" => &S0_FP, "s1" => &S1,
-    "a0" => &A0, "a1" => &A1, "a2" => &A2, "a3" => &A3, "a4" => &A4, "a5" => &A5, "a6" => &A6, "a7" => &A7,
+    "a0" => &A0, "a1" => &A1, "a2" => &A2, "a3" => &A3, "a4" => &A4, "a5" => &A5, "a6" => &A6,
+    "a7" => &A7,
     "s2" => &S2, "s3" => &S3, "s4" => &S4, "s5" => &S5, "s6" => &S6, "s7" => &S7, "s8" => &S8,
     "s9" => &S9, "s10" => &S10, "s11" => &S11,
     "t3" => &T3, "t4" => &T4, "t5" => &T5, "t6" => &T6,
@@ -89,7 +273,7 @@ impl Registers64 {
         match reg {
             PC => self.pc,
             ZERO => 0,
-            _ => self.array[reg.pos as usize]
+            _ => self.array[reg.pos as usize],
         }
     }
 

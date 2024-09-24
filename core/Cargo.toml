@@ -6,16 +6,12 @@ edition = "2021"
 [dependencies]
 monologvm-pmacro = { path = "../pmacro" }
 
-anyhow = "1.0.88"
-bitfield = "0.17.0"
-crossbeam = "0.8.4"
-derive_more = { version = "1.0.0", features = ["full"] }
-enum-primitive-derive = "0.3.0"
-itertools = "0.13.0"
-merge-streams = "0.1.2"
-num-traits = "0.2.19"
-phf = { version = "0.11.2", features = ["macros"] }
-proc-macro2 = "1.0.86"
-quote = "1.0.37"
-strum_macros = { version = "0.26.4" }
-syn = { version = "2.0.77", features = ["full", "extra-traits"] }
+anyhow = "1.0.89"                                                 # Better error handling.
+bitfield = "0.17.0"                                               # Bitfield manipulation.
+crossbeam = "0.8.4"                                                # Tools for concurrent programming.
+derive_more = { version = "1.0.0", features = ["full"] }           # New derive rules for newtypes, structs and enums; including From, Into, Display, Debug,
+itertools = "0.13.0"                                              # Extra iterator adaptors, functions and macros.
+phf = { version = "0.11.2", features = ["macros"] }               # library to generate efficient lookup tables at compile time. Used in the register module.
+proc-macro2 = "1.0.86"                                            # Better proc-macro support.
+quote = "1.0.37"                                                  # Quasi-quoting macro quote!.
+syn = { version = "2.0.77", features = ["full", "extra-traits"] } # Parsing library for Rust code.

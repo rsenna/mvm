@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Rogério Senna 2024.
+ * Copyright ©️ 2024 Rogério Senna. All rights reserved.
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
  * the European Commission - subsequent versions of the EUPL (the "Licence");
@@ -19,21 +19,160 @@
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 
-use monologvm_pmacro::EnumAliases;
-
-use crate::etc::{Byte, DoubleWord, HalfWord, InstructionLength, Word};
-use crate::impl_traits;
 use bitfield::bitfield;
-use derive_more::{From, Into};
-use enum_primitive_derive::Primitive;
-use num_traits::{FromPrimitive, ToPrimitive};
+use derive_more::{From, Into, TryFrom};
 
-pub const INVALID_OPCODE7: OpcodeBits = OpcodeBits(0);
+use crate::impl_common_bitfield_traits;
 
-#[derive(Debug, Eq, PartialEq, Primitive)]
+pub const INVALID_OPCODE7: Opcode7Bitfield = Opcode7Bitfield(0);
+
+bitfield! {
+    pub struct Opcode7Bitfield(u8);
+    impl Debug;
+    u8, get, set: 6, 0;
+}
+
+bitfield! {
+    struct Funct3Bitfield(u8);
+    impl Debug;
+    u8, get, set: 2, 0;
+}
+
+bitfield! {
+    struct Funct7Bitfield(u8);
+    impl Debug;
+    u8, get, set: 6, 0;
+}
+
+bitfield! {
+    struct Rd5Bitfield(u8);
+    impl Debug;
+    u8, get, set: 4, 0;
+}
+
+bitfield! {
+    struct Rs5Bitfield(u8);
+    impl Debug;
+    u8, get, set: 4, 0;
+}
+
+bitfield! {
+    struct Immediate12Bitfield(u16);
+    impl Debug;
+    u16, get, set: 11, 0;
+}
+
+bitfield! {
+    pub struct RType32Bitfield(u32);
+    impl Debug;
+    pub u8, opcode, set_opcode: 6, 0;
+    u8, rd, set_rd: 11, 7;
+    u8, funct3, set_funct3: 14, 12;
+    u8, rs1, set_rs1: 19, 15;
+    u8, rs2, set_rs2: 24, 20;
+    u8, funct7, set_funct7: 31, 25;
+}
+
+bitfield! {
+    pub struct IType32Bitfield(u32);
+    impl Debug;
+    pub u8, opcode, set_opcode: 6, 0;
+    u8, rd, set_rd: 11, 7;
+    u8, funct3, set_funct3: 14, 12;
+    u8, rs1, set_rs1: 19, 15;
+    imm_b20, set_imm_b20: 20;
+    u8, imm_b24_21, set_imm_b24_21: 24, 21;
+    u8, imm_b30_25, set_imm_b30_25: 30, 25;
+    imm_b31, set_imm_b31: 31;
+}
+
+bitfield! {
+    pub struct IFenceType32Bitfield(u32);
+    impl Debug;
+    pub u8, opcode, set_opcode: 6, 0;
+    u8, rd, set_rd: 11, 7;
+    u8, funct3, set_funct3: 14, 12;
+    u8, rs1, set_rs1: 19, 15;
+    sw, set_sw: 20;
+    sr, set_sr: 21;
+    so, set_so: 22;
+    si, set_si: 23;
+    pw, set_pw: 24;
+    pr, set_pr: 25;
+    po, set_po: 26;
+    pi, set_pi: 27;
+    u8, fmt, set_fmt: 31, 28;
+}
+
+bitfield! {
+    pub struct SType32Bitfield(u32);
+    impl Debug;
+    pub u8, opcode, set_opcode: 6, 0;
+    imm_b7, set_imm_b7: 7;
+    u8, imm_b11_8, set_imm_b11_8: 11, 8;
+    u8, funct3, set_funct3: 14, 12;
+    u8, rs1, set_rs1: 19, 15;
+    u8, rs2, set_rs2: 24, 20;
+    u8, imm_b30_25, set_imm_b30_25: 30, 25;
+    imm_b31, set_imm_b31: 31;
+}
+
+// Note: same as SType32, but let's keep a separate type just in case
+bitfield! {
+    pub struct BType32Bitfield(u32);
+    impl Debug;
+    pub u8, opcode, set_opcode: 6, 0;
+    imm_b7, set_imm_b7: 7;
+    u8, imm_b11_8, set_imm_b11_8: 11, 8;
+    u8, funct3, set_funct3: 14, 12;
+    u8, rs1, set_rs1: 19, 15;
+    u8, rs2, set_rs2: 24, 20;
+    u8, imm_b30_25, set_imm_b30_25: 30, 25;
+    imm_b31, set_imm_b31: 31;
+}
+
+bitfield! {
+    pub struct UType32Bitfield(u32);
+    impl Debug;
+    pub u8, opcode, set_opcode: 6, 0;
+    u8, rd, set_rd: 11, 7;
+    u8, imm_b19_12, set_imm_b19_12: 19, 12;
+    u16, imm_b30_20, set_imm_b30_20: 30, 20;
+    imm_b31, set_imm_b31: 31;
+}
+
+bitfield! {
+    pub struct JType32Bitfield(u32);
+    impl Debug;
+    pub u8, opcode, set_opcode: 6, 0;
+    u8, rd, set_rd: 11, 7;
+    u8, imm_b19_12, set_imm_b19_12: 19, 12;
+    imm_b20, set_imm_b20: 20;
+    u8, imm_b24_21, set_imm_b24_21: 24, 21;
+    u8, imm_b30_25, set_imm_b30_25: 30, 25;
+    imm_b31, set_imm_b31: 31;
+}
+
+bitfield! {
+    pub struct Immediate32Bitfield(u32);
+    impl Debug;
+    bit0, set_bit0: 0;
+    u8, seq_b4_1, set_seq_b4_1: 4, 1;
+    u8, seq_b10_5, set_seq_b10_5: 10, 5;
+    bit11, set_bit11: 11;
+    u8, seq_b19_12, set_seq_b19_12: 19, 12;
+    u16, seq_b30_20, set_seq_b30_20: 30, 20;
+    bit31, set_bit31: 31;
+}
+
+pub trait Bits {
+    // TODO:
+}
+
+#[derive(Debug, Eq, PartialEq, TryFrom)]
+#[try_from(repr)]
 #[repr(u8)]
-pub enum OpcodeMapID {
-    Null = 0b0000000,                   //   0 TODO: remove Null, use Option<OpcodeID>
+pub enum Opcode7Table {
     Load = 0b0000011,                   //   3
     LoadFloatingPoint = 0b0000111,      //   7
     Custom0 = 0b0001011,                //   8
@@ -65,8 +204,10 @@ pub enum OpcodeMapID {
 }
 
 #[repr(u8)]
-#[derive(PartialEq, Eq, EnumAliases(SUB = ADD, SRL = SRA), Into(Byte))]
-pub enum Funct3Opcode {
+#[derive(PartialEq, Eq, From)]
+#[from(Byte)]
+//#[EnumAlias(SUB = ADD, SRL = SRA)]
+pub enum Funct3OpcodeTable {
     ADD = 0b000,  // 0
     SLL = 0b001,  // 1
     SLT = 0b010,  // 2
@@ -79,7 +220,7 @@ pub enum Funct3Opcode {
 
 #[repr(u8)]
 #[derive(PartialEq, Eq)]
-enum Funct3Branch {
+enum Funct3BranchTable {
     BEQ = 0b000,  // 0
     BNE = 0b001,  // 1
     BLT = 0b100,  // 4
@@ -90,7 +231,7 @@ enum Funct3Branch {
 
 #[repr(u8)]
 #[derive(PartialEq, Eq)]
-enum Funct3Load {
+enum Funct3LoadTable {
     LB = 0b000,  // 0
     LH = 0b001,  // 1
     LW = 0b010,  // 2
@@ -100,15 +241,16 @@ enum Funct3Load {
 
 #[repr(u8)]
 #[derive(PartialEq, Eq)]
-enum Funct3Store {
+enum Funct3StoreTable {
     SB = 0b000, // 0
     SH = 0b001, // 1
     SW = 0b010, // 2
 }
 
 #[repr(u8)]
-#[derive(PartialEq, Eq, EnumAliases(SRLI = SRAI))]
-enum Funct3IntegerRegisterImmediate {
+#[derive(PartialEq, Eq)]
+//#[EnumAlias(SRLI = SRAI)]
+enum Funct3IntegerRegisterImmediateTable {
     ADDI = 0b000,  // 0
     SLLI = 0b001,  // 1
     SLTI = 0b010,  // 2
@@ -120,195 +262,76 @@ enum Funct3IntegerRegisterImmediate {
 }
 
 #[repr(u8)]
-#[derive(PartialEq, Eq, EnumAliases(EBREAK = ECALL))]
-enum Funct3System {
+#[derive(PartialEq, Eq)]
+//#[EnumAlias(EBREAK = ECALL)]
+enum Funct3SystemTable {
     ECALL = 0b000, // 0
 }
 
-pub enum Funct3 {
-    Opcode(Funct3Opcode),
-    Branch(Funct3Branch),
-    Load(Funct3Load),
-    Store(Funct3Store),
-    IntegerRegisterImmediate(Funct3IntegerRegisterImmediate),
-    System(Funct3System),
+pub enum Funct3Uop {
+    Opcode(Funct3OpcodeTable),
+    Branch(Funct3BranchTable),
+    Load(Funct3LoadTable),
+    Store(Funct3StoreTable),
+    IntegerRegisterImmediate(Funct3IntegerRegisterImmediateTable),
+    System(Funct3SystemTable),
 }
 
-bitfield! {
-    struct OpcodeBits(Byte);
-    impl Debug, PartialEq, From;
-    Byte, get, set: 6, 0;
-}
+// TODO: temp declarations
+pub enum Funct7Uop {}
+pub enum Immediate32Uop {}
 
-bitfield! {
-    struct Funct3Bits(Byte);
-    impl Debug, PartialEq, From;
-    Byte, get, set: 2, 0;
-}
-
-bitfield! {
-    struct Funct7Bits(Byte);
-    impl Debug, PartialEq, From;
-    Byte, get, set: 6, 0;
-}
-
-bitfield! {
-    struct RdRsBits(Byte);
-    impl Debug, PartialEq, From;
-    Byte, get, set: 4, 0;
-}
-
-bitfield! {
-    struct Immediate12Bits(HalfWord);
-    impl Debug, PartialEq, From;
-    HalfWord, get, set: 11, 0;
-}
-
-bitfield! {
-    pub struct RType32(Word);
-    impl Debug, PartialEq, From;
-    u8, opcode, set_opcode: 6, 0;
-    u8, rd, set_rd: 11, 7;
-    u8, funct3, set_funct3: 14, 12;
-    u8, rs1, set_rs1: 19, 15;
-    u8, rs2, set_rs2: 24, 20;
-    u8, funct7, set_funct7: 31, 25;
-}
-
-bitfield! {
-    pub struct IType32(Word);
-    impl Debug, PartialEq, From;
-    u8, opcode, set_opcode: 6, 0;
-    u8, rd, set_rd: 11, 7;
-    u8, funct3, set_funct3: 14, 12;
-    u8, rs1, set_rs1: 19, 15;
-    imm_b20, set_imm_b20: 20;
-    u8, imm_b24_21, set_imm_b24_21: 24, 21;
-    u8, imm_b30_25, set_imm_b30_25: 30, 25;
-    imm_b31, set_imm_b31: 31;
-}
-
-bitfield! {
-    pub struct IFenceType32(Word);
-    impl Debug, PartialEq, From;
-    u8, opcode, set_opcode: 6, 0;
-    u8, rd, set_rd: 11, 7;
-    u8, funct3, set_funct3: 14, 12;
-    u8, rs1, set_rs1: 19, 15;
-    sw, set_sw: 20;
-    sr, set_sw: 21;
-    so, set_sw: 22;
-    si, set_sw: 23;
-    pw, set_sw: 24;
-    pr, set_sw: 25;
-    po, set_sw: 26;
-    pi, set_sw: 27;
-    u8, fmt, set_fmt: 31, 28;
-}
-
-bitfield! {
-    pub struct SType32(Word);
-    impl Debug, PartialEq, From;
-    u8, opcode, set_opcode: 6, 0;
-    imm_b7, set_imm_b7: 7;
-    u8, imm_b11_8, set_imm_b11_8: 11, 8;
-    u8, funct3, set_funct3: 14, 12;
-    u8, rs1, set_rs1: 19, 15;
-    u8, rs2, set_rs2: 24, 20;
-    u8, imm_b30_25, set_imm_b30_25: 30, 25;
-    imm_b31, set_imm_b31: 31;
-}
-
-// Note: same as SType32, but let's keep a separate type just in case
-bitfield! {
-    pub struct BType32(Word);
-    impl Debug, PartialEq, From;
-    u8, opcode, set_opcode: 6, 0;
-    imm_b7, set_imm_b7: 7;
-    u8, imm_b11_8, set_imm_b11_8: 11, 8;
-    u8, funct3, set_funct3: 14, 12;
-    u8, rs1, set_rs1: 19, 15;
-    u8, rs2, set_rs2: 24, 20;
-    u8, imm_b30_25, set_imm_b30_25: 30, 25;
-    imm_b31, set_imm_b31: 31;
-}
-
-bitfield! {
-    pub struct UType32(Word);
-    impl Debug, PartialEq, From;
-    u8, opcode, set_opcode: 6, 0;
-    u8, rd, set_rd: 11, 7;
-    u8, imm_b19_12, set_imm_b19_12: 19, 12;
-    u16, imm_b30_20, set_imm_b30_20: 30, 20;
-    imm_b31, set_imm_b31: 31;
-}
-
-bitfield! {
-    pub struct JType32(Word);
-    impl Debug, PartialEq, From;
-    u8, opcode, set_opcode: 6, 0;
-    u8, rd, set_rd: 11, 7;
-    u8, imm_b19_12, set_imm_b19_12: 19, 12;
-    imm_b20, set_imm_b20: 20;
-    u8, imm_b24_21, set_imm_b24_21: 24, 21;
-    u8, imm_b30_25, set_imm_b30_25: 30, 25;
-    imm_b31, set_imm_b31: 31;
-}
-
-bitfield! {
-    pub struct Immediate32Bits(Word);
-    impl Debug, PartialEq, From;
-    bit0, set_bit0: 0;
-    u8, seq_b4_1, set_seq_b4_1: 4, 1;
-    u8, seq_b10_5, set_seq_b10_5: 10, 5;
-    bit11, set_bit11: 11;
-    u8, seq_b19_12, set_seq_b19_12: 19, 12;
-    u16, seq_b30_20, set_seq_b30_20: 30, 20;
-    bit31, set_bit31: 31;
-}
-
-impl_traits!(OpcodeBits);
-impl_traits!(RType32);
-impl_traits!(IType32);
-impl_traits!(IFenceType32);
-impl_traits!(SType32);
-impl_traits!(BType32);
-impl_traits!(UType32);
-impl_traits!(JType32);
-impl_traits!(Immediate32Bits);
+impl_common_bitfield_traits!(Opcode7Bitfield);
+impl_common_bitfield_traits!(RType32Bitfield);
+impl_common_bitfield_traits!(IType32Bitfield);
+impl_common_bitfield_traits!(IFenceType32Bitfield);
+impl_common_bitfield_traits!(SType32Bitfield);
+impl_common_bitfield_traits!(BType32Bitfield);
+impl_common_bitfield_traits!(UType32Bitfield);
+impl_common_bitfield_traits!(JType32Bitfield);
+impl_common_bitfield_traits!(Immediate32Bitfield);
 
 // TODO: make automatic conversions from Funct3* to Funct3Bits
 
-pub const fn get_funct_3(byte: Byte) -> Option<Funct3> {
-    Some(Funct3(byte))
-}
-
-const fn get_funct_7(byte: Byte) -> Option<Funct7Bits> {
-    Some(Funct7Bits(byte))
-}
-
-impl From<Funct3> for Byte {
-    fn from(value: Funct3) -> Self {
-        match value {
-            Funct3(_) => {}
-        }
-    }
-}
-
-impl From<OpcodeMapID> for u8 {
-    fn from(value: OpcodeMapID) -> Self {
-        value.to_u8().unwrap()
-    }
-}
-
-impl Debug for OpcodeBits {
-    fn fmt(&self, form: &mut Formatter<'_>) -> fmt::Result {
-        form.debug_tuple("Opcode").field(&self.0).finish()
-    }
-}
-
-impl From<OpcodeMapID> for OpcodeBits {
-    fn from(value: OpcodeMapID) -> Self {
-        OpcodeBits(value.to_u8().unwrap())
-    }
-}
+// impl From<Funct3Uop> for Byte {
+//     fn from(value: Funct3Uop) -> Self {
+//         match value {
+//             Funct3Uop::Opcode(opcode) => Self(opcode.into()),
+//             Funct3Uop::Branch(branch) => Self(branch.into()),
+//             Funct3Uop::Load(load) => Self(load.into()),
+//             Funct3Uop::Store(store) => Self(store.into()),
+//             Funct3Uop::IntegerRegisterImmediate(iri) => Self(iri.into()),
+//             Funct3Uop::System(system) => Self(system.into()),
+//         }
+//     }
+// }
+//
+// impl From<Opcode7Table> for Byte {
+//     fn from(value: Opcode7Table) -> Self {
+//         Byte(value.into().unwrap())
+//     }
+// }
+//
+// impl Debug for Opcode7Bitfield {
+//     fn fmt(&self, form: &mut Formatter<'_>) -> fmt::Result {
+//         form.debug_tuple("Opcode").field(&self.0).finish()
+//     }
+// }
+//
+// impl From<Opcode7Table> for Opcode7Bitfield {
+//     fn from(value: Opcode7Table) -> Self {
+//         Opcode7Bitfield(value.into())
+//     }
+// }
+//
+// impl From<Word> for Opcode7Bitfield {
+//     fn from(value: Word) -> Self {
+//         Opcode7Bitfield(Byte(value.0 as u8))
+//     }
+// }
+//
+// impl From<Opcode7Bitfield> for Option<Opcode7Table> {
+//     fn from(value: Opcode7Bitfield) -> Self {
+//         value.into()
+//     }
+// }
