@@ -14,50 +14,74 @@
 // limitations under the Licence.
 //
 
-use derive_more::Display;
+pub(crate) type Byte = u8;
+pub(crate) type HalfWord = u16;
+pub(crate) type Word = u32;
+pub(crate) type DoubleWord = u64;
 
-use crate::instruction::InstructionFormat32;
-use crate::opcode::Opcode7Table;
+pub trait Memory {
+    fn read_byte(&self, address: Word) -> Byte;
+    fn read_half_word(&self, address: Word) -> HalfWord;
+    fn read_word(&self, address: Word) -> Word;
+    fn read_double_word(&self, address: Word) -> DoubleWord;
+    fn write_byte(&mut self, address: Word, value: &Byte);
+    fn write_half_word(&mut self, address: Word, value: &HalfWord);
+    fn write_word(&mut self, address: Word, value: &Word);
+    fn write_double_word(&mut self, address: Word, value: &DoubleWord);
+}
 
-#[derive(Copy, Clone, Debug, Display, PartialEq)]
-pub struct Byte(pub u8);
-
-#[derive(Copy, Clone, Debug, Display, PartialEq)]
-pub struct HalfWord(pub u16);
-
-#[derive(Copy, Clone, Debug, Display, PartialEq)]
-pub struct Word(pub u32);
-
-#[derive(Copy, Clone, Debug, Display, PartialEq)]
-pub struct DoubleWord(pub u64);
-
-pub struct Memory {
+#[derive(Debug)]
+pub struct VecMemory {
     ram: Vec<Byte>,
 }
 
 pub enum InstructionLength {
-    Byte = 8,
-    HalfWord = 16,
-    Word = 32,
+    Byte       = 8,
+    HalfWord   = 16,
+    Word       = 32,
     DoubleWord = 64,
 }
 
-impl From<Word> for Option<InstructionFormat32> {
-    fn from(value: Word) -> Self {
-        let opcode = value.into().opcode();
-        let opcode_id_opt = opcode.try_into().ok();
+// TODO: I tried using functions and macros to avoid code duplication below, but I couldn't make it work.
+impl Memory for VecMemory {
+    fn read_byte(&self, address: Word) -> Byte { self.ram[address as usize] }
 
-        match opcode_id_opt {
-            Some(Opcode7Table::OpImmediate) => Some(InstructionFormat32::IntegerRegisterImmediate(value)),
-            Some(Opcode7Table::JumpAndLinkRegister) => Some(InstructionFormat32::ConditionBranch(value)),
-            Some(Opcode7Table::OpcodeRegister) => Some(InstructionFormat32::IntegerRegisterRegister(value)),
-            Some(Opcode7Table::JumpAndLink) => Some(InstructionFormat32::UnconditionalJump(value)),
-            Some(Opcode7Table::LoadUpperImmediate) | Some(Opcode7Table::AddUpperImmediateToPC) => {
-                Some(InstructionFormat32::Load(value))
-            }
-            Some(Opcode7Table::Branch) => Some(InstructionFormat32::ConditionBranch(value)),
-            Some(Opcode7Table::Store) => Some(InstructionFormat32::Store(value)),
-            _ => None, // TODO missing other instruction formats
+    fn read_half_word(&self, address: Word) -> HalfWord {
+        self.read_byte(address) as HalfWord | ((self.read_byte(address + 1) as HalfWord) << Byte::BITS)
+    }
+
+    fn read_word(&self, address: Word) -> Word {
+        self.read_half_word(address) as Word | ((self.read_half_word(address + 2) as Word) << HalfWord::BITS)
+    }
+
+    fn read_double_word(&self, address: Word) -> DoubleWord {
+        self.read_word(address) as DoubleWord | ((self.read_word(address + 4) as DoubleWord) << Word::BITS)
+    }
+
+    fn write_byte(&mut self, address: Word, value: &Byte) { self.ram[address as usize] = *value }
+
+    fn write_half_word(&mut self, address: Word, value: &HalfWord) {
+        for i in 0..HalfWord::BITS {
+            let actual_value = (value >> (i * Byte::BITS)) as Byte;
+            self.write_byte(address + i as Word, &actual_value);
         }
     }
+
+    fn write_word(&mut self, address: Word, value: &Word) {
+        for i in 0..Word::BITS {
+            let actual_value = (value >> (i * Byte::BITS)) as Byte;
+            self.write_byte(address + i as Word, &actual_value);
+        }
+    }
+
+    fn write_double_word(&mut self, address: Word, value: &DoubleWord) {
+        for i in 0..DoubleWord::BITS {
+            let actual_value = (value >> (i * Byte::BITS)) as Byte;
+            self.write_byte(address + i as Word, &actual_value);
+        }
+    }
+}
+
+impl VecMemory {
+    pub fn new(size: usize) -> Self { Self { ram: vec![0; size] } }
 }

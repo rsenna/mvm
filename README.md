@@ -7,6 +7,17 @@ The Monolog Virtual Machine
 ```bash
 ```
 
+## Ubiquitous Language
+
+- **Monolog**: The programming language.
+- **Monolog Virtual Machine (MVM)**: The virtual machine that runs Monolog programs. Based on the RISC-V architecture.
+- **Chomp**: A CPU word or instruction (neologism, avoids confusion with "word" in the RISC-V architecture).
+- **Byte**: An 8-bit value in memory.
+- **HalfWord**: A 16-bit value in memory.
+- **Word**: A 32-bit value in memory.
+- **DoubleWord**: A 64-bit value in memory.
+- **QuadWord**: A 128-bit value in memory.
+
 ## Style Guide
 
 ```rust
@@ -39,11 +50,12 @@ static STATIC_NAME: Type = value;
 
 // Type definitions ////////////////////////////////////////////////////////////
 
-// Enums:
-enum EnumName {
-    SimpleVariant = 0,
-    StructVariant { field_name: Type },
-    TupleVariant(Type),
+// Type aliases:
+type TypeAlias = Type;
+
+// Traits:
+trait TraitName {
+    fn trait_method_name(&self) -> Type;
 }
 
 // Structs:
@@ -51,19 +63,18 @@ struct StructName {
     field_name: Type,
 }
 
+// Enums:
+enum EnumName {
+    SimpleVariant = 0,
+    StructVariant { field_name: Type },
+    TupleVariant(Type),
+}
+
 // Unions:
 union UnionName {
     field_name1: Type,
     field_name2: Type,
     field_name3: Type,
-}
-
-// Type aliases:
-type TypeAlias = Type;
-
-// Traits:
-trait TraitName {
-    fn trait_method_name(&self) -> Type;
 }
 
 // Macro definitions ///////////////////////////////////////////////////////////

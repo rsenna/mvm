@@ -1,20 +1,18 @@
-/*
- * Copyright ©️ 2024 Rogério Senna. All rights reserved.
- *
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- * https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+// Copyright ©️ 2024 Rogério Senna. All rights reserved.
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+// the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+// https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and
+// limitations under the Licence.
+//
 
 use phf::phf_map;
 use std::iter::Iterator;
@@ -242,14 +240,14 @@ pub struct RegisterType {
 pub type RegistersArray64 = [RegisterValue64; REGISTERS_COUNT];
 pub type RegisterValue64 = u64;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, Display, From, PartialEq)]
 pub enum SavedBy {
     None,
     Caller,
     Callee,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, From, PartialEq)]
 pub struct Registers64 {
     pub pc: RegisterValue64,
     pub array: RegistersArray64,
@@ -277,9 +275,7 @@ impl Registers64 {
         }
     }
 
-    pub fn set(&mut self, rt: RT, v: RegisterValue64) {
-        self.array[rt.pos as usize] = v
-    }
+    pub fn set(&mut self, rt: RT, v: RegisterValue64) { self.array[rt.pos as usize] = v }
 }
 
 impl RegisterType {

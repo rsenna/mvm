@@ -1,20 +1,20 @@
-/*
- * Copyright ©️ 2024 Rogério Senna. All rights reserved.
- *
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- * https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+// Copyright ©️ 2024 Rogério Senna. All rights reserved.
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+// the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+// https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and
+// limitations under the Licence.
+//
+
+use paste::paste;
 
 /// Aliases - can be used (mostly) as regular enum values:
 #[macro_export]
@@ -33,24 +33,16 @@ macro_rules! enum_aliases {
 macro_rules! impl_common_bitfield_traits {
     ($($enumType:ident),* $(,)?) => {
         $(
-            impl PartialEq for $enumType {
-                fn eq(&self, other: &Self) -> bool {
-                    self.0 == other.0
-                }
-
-                fn ne(&self, other: &Self) -> bool {
-                    self.0 != other.0
-                }
-            }
-
             impl Display for $enumType {
                 fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
                     fmt::Debug::fmt(self, f) // Just reuse Debug implementation
                 }
             }
 
-            impl Bits for $enumType {
-                // TODO: what methods are required here?
+            impl From<crate::memory::Word> for $enumType {
+                fn from(value: crate::memory::Word) -> Self {
+                    $enumType::new_with_raw_value(value.value)
+                }
             }
         )*
     };
