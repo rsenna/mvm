@@ -1,0 +1,3 @@
+[submodule "bitbybit"]
+	path = bitbybit
+	url = git@github.com:rsenna/bitfield.git

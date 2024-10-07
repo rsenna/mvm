@@ -16,14 +16,13 @@
 
 #![feature(associated_type_defaults)]
 #![feature(inherent_associated_types)]
-#![recursion_limit = "256"]
 
 pub mod dmacro;
 
+pub mod architecture;
 pub mod bitfield;
 pub mod hart;
 pub mod instruction;
-pub mod isa_module;
 pub mod machine;
 pub mod memory;
 pub mod register;

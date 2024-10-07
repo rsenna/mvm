@@ -14,9 +14,9 @@
 // limitations under the Licence.
 //
 
-use crate::instruction::{GenericInstructionFormat, InstructionFormat32, InstructionFormat32Union, ADDI};
-use crate::isa_module::{InstructionSet, IsaModule, RV32I};
-use crate::memory::{Byte, DoubleWord, HalfWord, InstructionLength, Memory, VecMemory, Word};
+use crate::architecture::{Architecture, Instruction, InstructionSet, RV32Instruction, RV32I};
+use crate::instruction::ADDI;
+use crate::memory::{InstructionLength, Memory, VecMemory, Word};
 use crate::register::{RegisterValue64, Registers64};
 
 // TODO support variable amount of registers
@@ -26,12 +26,12 @@ pub struct SimpleRV32IHart {
     ram: VecMemory,
 }
 
-pub trait Hart<I: InstructionSet, F: GenericInstructionFormat> {
+pub trait Hart<I: InstructionSet, F: Instruction> {
     type ISA = I;
-    type InstructionFormat = F;
+    type Instruction = F;
 
-    fn execute(&mut self, inst: Self::InstructionFormat);
-    fn fetch(&mut self) -> Option<Self::InstructionFormat>;
+    fn execute(&mut self, inst: Self::Instruction);
+    fn fetch(&mut self) -> Option<Self::Instruction>;
 
     // TODO FINALLY use the disruptor pattern! EDIT: actually crossbeam
     //      each Hart (cpu) should process instructions in their own disruptor
@@ -46,37 +46,37 @@ impl SimpleRV32IHart {
     }
 }
 
-impl Hart<RV32I, InstructionFormat32> for SimpleRV32IHart {
-    fn execute(&mut self, formatted: InstructionFormat32) {
-        match formatted {
-            InstructionFormat32::IntegerRegisterImmediate(i_type) => {
+impl Hart<RV32I, RV32Instruction> for SimpleRV32IHart {
+    fn execute(&mut self, instruction: RV32Instruction) {
+        match instruction {
+            RV32Instruction::IntegerRegisterImmediate(i_type) => {
                 let rd = i_type.rd();
                 let rs1 = i_type.rs1();
                 let imm = i_type.imm();
 
-                if formatted.is(ADDI) {
-                    self.registers[rd] = self.registers[rs1].wrapping_add(imm);
+                if RV32I.match_instruction(instruction, ADDI) {
+                    self.registers.array[rd] = self.registers.array[rs1].wrapping_add(imm);
                 }
             }
-            InstructionFormat32::IntegerRegisterRegister(r_type) => {}
-            InstructionFormat32::UnconditionalJump(j_type) => {}
-            InstructionFormat32::ConditionBranch(b_type) => {}
-            InstructionFormat32::Load(i_type) => {}
-            InstructionFormat32::Store(s_type) => {}
-            InstructionFormat32::Fence(if_type) => {}
-            InstructionFormat32::ControlAndStatusRegister(i_type) => {}
-            InstructionFormat32::TimeAndCounter(i_type) => {}
-            InstructionFormat32::EnvironmentCallAndBreakpoint(i_type) => {}
+            RV32Instruction::IntegerRegisterRegister(r_type) => {}
+            RV32Instruction::UnconditionalJump(j_type) => {}
+            RV32Instruction::ConditionBranch(b_type) => {}
+            RV32Instruction::Load(i_type) => {}
+            RV32Instruction::Store(s_type) => {}
+            RV32Instruction::Fence(if_type) => {}
+            RV32Instruction::ControlAndStatusRegister(i_type) => {}
+            RV32Instruction::TimeAndCounter(i_type) => {}
+            RV32Instruction::EnvironmentCallAndBreakpoint(i_type) => {}
         }
     }
 
     // This routine only works for 32 bits instructions
-    fn fetch(&mut self) -> Option<InstructionFormat32> {
+    fn fetch(&mut self) -> Option<RV32Instruction> {
         let index = self.registers.pc as Word;
         let data = self.ram.read_word(index);
 
         self.registers.pc += InstructionLength::Word as RegisterValue64;
 
-        Self::ISA::decode(data)
+        RV32I.decode(data)
     }
 }

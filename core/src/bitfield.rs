@@ -17,64 +17,24 @@
 use std::fmt;
 use std::fmt::Formatter;
 
-use crate::impl_common_bitfield_traits;
+use anyhow::{Error, Result};
 use arbitrary_int::{u12, u3, u4, u5, u7};
 use bitbybit::bitfield;
-use strum::{EnumDiscriminants, FromRepr};
+use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
-pub(crate) type Opcode7 = u7;
-pub(crate) type Funct3 = u3;
-pub(crate) type Funct7 = u7;
-pub(crate) type Rd5 = u5;
-pub(crate) type Rs5 = u5;
-pub(crate) type Immediate12 = u12;
+use crate::impl_common_bitfield_traits;
 
-// #[bitfield(u8, default = 0)]
-// #[derive(Debug, PartialEq)]
-// pub struct Opcode7Bitfield {
-//     #[bits(0..=6, rw)]
-//     value: u7,
-// }
-//
-// #[bitfield(u8)]
-// #[derive(Debug, PartialEq)]
-// pub struct Funct3Bitfield {
-//     #[bits(0..=2, rw)]
-//     value: u3,
-// }
-//
-// #[bitfield(u8)]
-// #[derive(Debug, PartialEq)]
-// pub struct Funct7Bitfield {
-//     #[bits(0..=6, rw)]
-//     value: u7,
-// }
-//
-// #[bitfield(u8)]
-// #[derive(Debug, PartialEq)]
-// pub struct Rd5Bitfield {
-//     #[bits(0..=4, rw)]
-//     value: u5,
-// }
-//
-// #[bitfield(u8)]
-// #[derive(Debug, PartialEq)]
-// pub struct Rs5Bitfield {
-//     #[bits(0..=4, rw)]
-//     value: u5,
-// }
-//
-// #[bitfield(u8)]
-// #[derive(Debug, PartialEq)]
-// pub struct Immediate12Bitfield {
-//     #[bits(0..=11, rw)]
-//     value: u12,
-// }
+// TODO: bitbybit does not work with type aliases
+pub type Opcode7 = u7;
+pub type Funct3 = u3;
+pub type Funct7 = u7;
+pub type Rd5 = u5;
+pub type Rs5 = u5;
+pub type Immediate12 = u12;
 
 #[bitfield(u32, default = 0)]
-#[derive(Debug, PartialEq)]
 pub struct RType32Bitfield {
-    #[bits(0..=7, rw)]
+    #[bits(0..=6, rw)]
     opcode: Opcode7,
     #[bits(7..=11, rw)]
     rd: Rd5,
@@ -145,7 +105,7 @@ pub struct SType32Bitfield {
     rs1: Rs5,
     #[bits(20..=24, rw)]
     rs2: Rs5,
-    #[bits([7, 8..=11, 25..=30, 31], rw)]
+    #[bits([7..=11, 25..=31], rw)]
     imm: Immediate12,
 }
 
@@ -174,7 +134,7 @@ pub struct UType32Bitfield {
     #[bits(7..=11, rw)]
     rd: Rd5,
     // TODO: Implement imm: must shift left by 12 bits
-    #[bits([12..=19, 20..=30, 31], rw)]
+    #[bits([12..=31], rw)]
     imm_raw: Immediate12,
 }
 
@@ -189,44 +149,92 @@ pub struct JType32Bitfield {
     imm_raw: Immediate12,
 }
 
-#[derive(Debug, Eq, FromRepr, PartialEq, EnumDiscriminants)]
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Opcode7Table {
-    Zero                = 0b0000000,    //   0 == 0x00
-    Load                = 0b0000011,    //   3 == 0x03
-    LoadFloatingPoint   = 0b0000111,    //   7 == 0x07
-    Custom0             = 0b0001011,    //   8 == 0x0B
-    MiscMemory          = 0b0001111,    //  15 == 0x0F
-    OpImmediate         = 0b0010011,    //  19 == 0x13
-    AddUpperImmediateToPC = 0b0010111,  //  23 == 0x17
-    OpImmediate32       = 0b0011011,    //  27 == 0x1B
-    Store               = 0b0100011,    //  35 == 0x23
-    StoreFloatingPoint  = 0b0100111,    //  39 == 0x27
-    Custom1             = 0b0101011,    //  43 == 0x2B
-    AtomicMemoryOperation = 0b0101111,  //  47 == 0x2F
-    OpcodeRegister      = 0b0110011,    //  51 == 0x33
-    LoadUpperImmediate  = 0b0110111,    //  55 == 0x37
-    OpRegister32        = 0b0111011,    //  59 == 0x3B
-    MultiplyAndAdd      = 0b1000011,    //  67 == 0x43
-    MultiplyAndSubtract = 0b1000111,    //  71 == 0x47
-    NegMultiplyAndSubtract = 0b1001011, //  75 == 0x4B
-    NegMultiplyAndAdd   = 0b1001111,    //  79 == 0x4F
-    OpFloatingPoint     = 0b1010011,    //  83 == 0x53
-    OpVector            = 0b1010111,    //  87 == 0x57
-    Custom2Rv128        = 0b1011011,    //  91 == 0x5B
-    Branch              = 0b1100011,    //  99 == 0x63
-    JumpAndLinkRegister = 0b1100111,    // 103 == 0x67
-    Reserved            = 0b1101011,    // 107 == 0x6B
-    JumpAndLink         = 0b1101111,    // 111 == 0x6F
-    System              = 0b1110011,    // 115 == 0x73
-    OpVectorElement     = 0b1110111,    // 119 == 0x77
-    Custom3Rv128        = 0b1111011,    // 123 == 0x7B
+    Zero                = 0,
+
+    AddUpperImmediatePC = 0b0010111, //  23 == 0x17
+    AtomicMemoryOp      = 0b0101111, //  47 == 0x2F
+    Branch              = 0b1100011, //  99 == 0x63
+    Custom0             = 0b0001011, //   8 == 0x0B
+    Custom1             = 0b0101011, //  43 == 0x2B
+    Custom2Rv128        = 0b1011011, //  91 == 0x5B
+    Custom3Rv128        = 0b1111011, // 123 == 0x7B
+    JumpAndLink         = 0b1101111, // 111 == 0x6F
+    JumpAndLinkRegister = 0b1100111, // 103 == 0x67
+    Load                = 0b0000011, //   3 == 0x03
+    LoadFloatingPoint   = 0b0000111, //   7 == 0x07
+    LoadUpperImmediate  = 0b0110111, //  55 == 0x37
+    MiscMemory          = 0b0001111, //  15 == 0x0F
+    MultiplyAdd         = 0b1000011, //  67 == 0x43
+    MultiplySubtract    = 0b1000111, //  71 == 0x47
+    NegMultiplyAdd      = 0b1001111, //  79 == 0x4F
+    NegMultiplySubtract = 0b1001011, //  75 == 0x4B
+    OpFloatingPoint     = 0b1010011, //  83 == 0x53
+    OpImmediate         = 0b0010011, //  19 == 0x13
+    OpImmediate32       = 0b0011011, //  27 == 0x1B
+    OpRegister          = 0b0110011, //  51 == 0x33
+    OpRegister32        = 0b0111011, //  59 == 0x3B
+    OpVector            = 0b1010111, //  87 == 0x57
+    OpVectorElement     = 0b1110111, // 119 == 0x77
+    Reserved            = 0b1101011, // 107 == 0x6B
+    Store               = 0b0100011, //  35 == 0x23
+    StoreFloatingPoint  = 0b0100111, //  39 == 0x27
+    System              = 0b1110011, // 115 == 0x73
 }
 
-#[derive(Debug, Eq, PartialEq, EnumDiscriminants)]
+#[repr(u8)]
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
+enum Funct3JALRTable {
+    JALR = 0b000, // 0
+
+    #[num_enum(catch_all)]
+    Unknown(u8),
+}
+
+#[repr(u8)]
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
+enum Funct3BranchTable {
+    BEQ  = 0b000, // 0
+    BNE  = 0b001, // 1
+    BLT  = 0b100, // 4
+    BGE  = 0b101, // 5
+    BLTU = 0b110, // 6
+    BGEU = 0b111, // 7
+
+    #[num_enum(catch_all)]
+    Unknown(u8),
+}
+
+#[repr(u8)]
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
+enum Funct3LoadTable {
+    LB  = 0b000, // 0
+    LH  = 0b001, // 1
+    LW  = 0b010, // 2
+    LBU = 0b100, // 4
+    LHU = 0b101, // 5
+
+    #[num_enum(catch_all)]
+    Unknown(u8),
+}
+
+#[repr(u8)]
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
+enum Funct3StoreTable {
+    SB = 0b000, // 0
+    SH = 0b001, // 1
+    SW = 0b010, // 2
+
+    #[num_enum(catch_all)]
+    Unknown(u8),
+}
+
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 //#[EnumAlias(SUB = ADD, SRL = SRA)]
-pub enum Funct3OpcodeTable {
+pub enum Funct3OpRegisterTable {
     ADD  = 0b000, // 0
     SLL  = 0b001, // 1
     SLT  = 0b010, // 2
@@ -235,41 +243,15 @@ pub enum Funct3OpcodeTable {
     SRA  = 0b101, // 5
     OR   = 0b110, // 6
     AND  = 0b111, // 7
+
+    #[num_enum(catch_all)]
+    Unknown(u8),
 }
 
 #[repr(u8)]
-#[derive(Debug, Eq, PartialEq, EnumDiscriminants)]
-enum Funct3BranchTable {
-    BEQ  = 0b000, // 0
-    BNE  = 0b001, // 1
-    BLT  = 0b100, // 4
-    BGE  = 0b101, // 5
-    BLTU = 0b110, // 6
-    BGEU = 0b111, // 7
-}
-
-#[repr(u8)]
-#[derive(Debug, Eq, PartialEq, EnumDiscriminants)]
-enum Funct3LoadTable {
-    LB  = 0b000, // 0
-    LH  = 0b001, // 1
-    LW  = 0b010, // 2
-    LBU = 0b100, // 4
-    LHU = 0b101, // 5
-}
-
-#[repr(u8)]
-#[derive(Debug, Eq, PartialEq, EnumDiscriminants)]
-enum Funct3StoreTable {
-    SB = 0b000, // 0
-    SH = 0b001, // 1
-    SW = 0b010, // 2
-}
-
-#[repr(u8)]
-#[derive(Debug, Eq, PartialEq, EnumDiscriminants)]
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
 //#[EnumAlias(SRLI = SRAI)]
-enum Funct3IntegerRegisterImmediateTable {
+enum Funct3OpImmediateTable {
     ADDI  = 0b000, // 0
     SLLI  = 0b001, // 1
     SLTI  = 0b010, // 2
@@ -278,50 +260,52 @@ enum Funct3IntegerRegisterImmediateTable {
     SRAI  = 0b101, // 5
     ORI   = 0b110, // 6
     ANDI  = 0b111, // 7
+
+    #[num_enum(catch_all)]
+    Unknown(u8),
 }
 
 #[repr(u8)]
-#[derive(Debug, Eq, PartialEq, EnumDiscriminants)]
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
 //#[EnumAlias(EBREAK = ECALL)]
 enum Funct3SystemTable {
     ECALL = 0b000, // 0
+
+    #[num_enum(catch_all)]
+    Unknown(u8),
 }
 
-#[derive(Debug, Eq, PartialEq, EnumDiscriminants)]
+#[derive(Debug, Eq, PartialEq)]
 #[repr(u8)]
-pub enum Funct3Uop {
-    Zero = 0,
-    Opcode(Funct3OpcodeTable),
+pub enum Funct3Expr {
+    JumpAndLinkRegister(Funct3JALRTable),
     Branch(Funct3BranchTable),
     Load(Funct3LoadTable),
     Store(Funct3StoreTable),
-    IntegerRegisterImmediate(Funct3IntegerRegisterImmediateTable),
+    OpRegister(Funct3OpRegisterTable),
+    OpImmediate(Funct3OpImmediateTable),
     System(Funct3SystemTable),
+    Unknown(u8),
 }
 
-#[derive(Debug, Eq, PartialEq, EnumDiscriminants)]
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
-pub enum Funct7Uop {
+pub enum Funct7Table {
     Logical    = 0,
     Arithmetic = 0b0100000,
+
+    #[num_enum(catch_all)]
+    Unknown(u8),
 }
 
-// begin TODO: temp declarations
-
-#[derive(Debug, Eq, PartialEq, EnumDiscriminants)]
-#[repr(u8)]
-pub enum Immediate32Uop {
-    Zero = 0,
+// TODO: Identify variants
+#[derive(Debug, Eq, IntoPrimitive, PartialEq, TryFromPrimitive)]
+#[repr(u16)]
+pub enum Immediate11Table {
+    #[num_enum(catch_all)]
+    Unknown(u16),
 }
 
-// end
-
-// impl_common_bitfield_traits!(Opcode7Bitfield);
-// impl_common_bitfield_traits!(Funct3Bitfield);
-// impl_common_bitfield_traits!(Funct7Bitfield);
-// impl_common_bitfield_traits!(Rd5Bitfield);
-// impl_common_bitfield_traits!(Rs5Bitfield);
-// impl_common_bitfield_traits!(Immediate12Bitfield);
 impl_common_bitfield_traits!(RType32Bitfield);
 impl_common_bitfield_traits!(IType32Bitfield);
 impl_common_bitfield_traits!(IFenceType32Bitfield);
@@ -330,46 +314,41 @@ impl_common_bitfield_traits!(BType32Bitfield);
 impl_common_bitfield_traits!(UType32Bitfield);
 impl_common_bitfield_traits!(JType32Bitfield);
 
-// TODO: make automatic conversions from Funct3* to Funct3Bits
-
-impl Into<Funct3> for Funct3Op {
+impl Into<Funct3> for Funct3Expr {
     fn into(self) -> Funct3 {
         match self {
-            Funct3Uop::Opcode(funct3) => funct3.into(),
-            Funct3Uop::Branch(funct3) => funct3.into(),
-            Funct3Uop::Load(funct3) => funct3.into(),
-            Funct3Uop::Store(funct3) => funct3.into(),
-            Funct3Uop::IntegerRegisterImmediate(funct3) => funct3.into(),
-            Funct3Uop::System(funct3) => funct3.into(),
+            Funct3Expr::JumpAndLinkRegister(funct3) => funct3.into(),
+            Funct3Expr::Branch(funct3) => funct3.into(),
+            Funct3Expr::Load(funct3) => funct3.into(),
+            Funct3Expr::Store(funct3) => funct3.into(),
+            Funct3Expr::OpRegister(funct3) => funct3.into(),
+            Funct3Expr::OpImmediate(funct3) => funct3.into(),
+            Funct3Expr::System(funct3) => funct3.into(),
+
+            // TODO: log this match?
+            Funct3Expr::Unknown(funct3) => funct3.into(),
         }
     }
 }
-// impl From<Opcode7Table> for Byte {
-//     fn from(value: Opcode7Table) -> Self {
-//         Byte(value.into().unwrap())
-//     }
-// }
-//
-// impl Debug for Opcode7Bitfield {
-//     fn fmt(&self, form: &mut Formatter<'_>) -> fmt::Result {
-//         form.debug_tuple("Opcode").field(&self.0).finish()
-//     }
-// }
-//
-// impl From<Opcode7Table> for Opcode7Bitfield {
-//     fn from(value: Opcode7Table) -> Self {
-//         Opcode7Bitfield(value.into())
-//     }
-// }
-//
-// impl From<Word> for Opcode7Bitfield {
-//     fn from(value: Word) -> Self {
-//         Opcode7Bitfield(Byte(value.0 as u8))
-//     }
-// }
-//
-// impl From<Opcode7Bitfield> for Option<Opcode7Table> {
-//     fn from(value: Opcode7Bitfield) -> Self {
-//         value.into()
-//     }
-// }
+
+impl Funct3Expr {
+    fn try_from(opcode7: Opcode7, funct3: Funct3) -> Result<Funct3Expr> {
+        let opcode = Opcode7Table::try_from(opcode7)?;
+
+        match opcode {
+            Opcode7Table::OpRegister => Ok(Funct3Expr::OpRegister(funct3.try_into()?)),
+            Opcode7Table::Load => Ok(Funct3Expr::Load(funct3.try_into()?)),
+            Opcode7Table::Store => Ok(Funct3Expr::Store(funct3.try_into()?)),
+            Opcode7Table::OpImmediate => Ok(Funct3Expr::OpImmediate(funct3.try_into()?)),
+            Opcode7Table::Branch => Ok(Funct3Expr::Branch(funct3.try_into()?)),
+            Opcode7Table::System => Ok(Funct3Expr::System(funct3.try_into()?)),
+            _ => Err(Error::msg("Unknown opcode")),
+        }
+    }
+}
+
+impl TryFrom<Opcode7> for Opcode7Table {
+    type Error = Error;
+
+    fn try_from(value: Opcode7) -> Result<Self> { value.try_into() }
+}

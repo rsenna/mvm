@@ -14,8 +14,6 @@
 // limitations under the Licence.
 //
 
-use paste::paste;
-
 /// Aliases - can be used (mostly) as regular enum values:
 #[macro_export]
 macro_rules! enum_aliases {
@@ -33,7 +31,7 @@ macro_rules! enum_aliases {
 macro_rules! impl_common_bitfield_traits {
     ($($enumType:ident),* $(,)?) => {
         $(
-            impl Display for $enumType {
+            impl derive_more::Display for $enumType {
                 fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
                     fmt::Debug::fmt(self, f) // Just reuse Debug implementation
                 }

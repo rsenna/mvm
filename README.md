@@ -18,6 +18,10 @@ The Monolog Virtual Machine
 - **DoubleWord**: A 64-bit value in memory.
 - **QuadWord**: A 128-bit value in memory.
 
+## Notes about code style
+
+- The `derive_more` and `num_enum` crates offer overlapping derive macros for enums. When both provide the same feature, prefer `num_enum`.
+
 ## Style Guide
 
 ```rust
@@ -50,13 +54,13 @@ static STATIC_NAME: Type = value;
 
 // Type definitions ////////////////////////////////////////////////////////////
 
-// Type aliases:
-type TypeAlias = Type;
-
 // Traits:
 trait TraitName {
     fn trait_method_name(&self) -> Type;
 }
+
+// Type aliases:
+type TypeAlias = Type;
 
 // Structs:
 struct StructName {

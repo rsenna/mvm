@@ -5,15 +5,18 @@ edition = "2021"
 
 [dependencies]
 monologvm-pmacro = { path = "../pmacro" }
+bitbybit = { path = "../bitbybit/bitbybit" }
+bitbybit-tests = { path = "../bitbybit/bitbybit-tests" }
 
 anyhow = "1.0.89"                                                 # Better error handling.
 arbitrary-int = "1.2.7"                                            # Arbitrary precision integers.
-bitbybit = "1.3.2"                                                 # Bit manipulation.
 crossbeam = "0.8.4"                                                # Tools for concurrent programming.
+derive_more = { version = "1.0.0", features = ["full"] }           # More derive macros.
 itertools = "0.13.0"                                              # Extra iterator adaptors, functions and macros.
+kinded = "0.3.0"                                                   # Derive unit-only enums (kinds) from more complex enums.
+num_enum = "0.7.3"                                                 # Derive numeric values from enum variants.
 paste = "1.0.15"                                                  # Macros for manipulating identifiers inside macro_rules!.
 phf = { version = "0.11.2", features = ["macros", "phf_macros"] } # Generate efficient lookup tables at compile time. Used in the register module.
 proc-macro2 = "1.0.86"                                            # Better proc-macro support.
 quote = "1.0.37"                                                  # Quasi-quoting macro quote!.
-strum = { version = "0.26.3", features = ["derive", "phf", "strum_macros"] } # STRings and enUMs.
 syn = { version = "2.0.79", features = ["full", "extra-traits"] } # Parsing library for Rust code.

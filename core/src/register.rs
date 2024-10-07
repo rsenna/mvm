@@ -240,14 +240,14 @@ pub struct RegisterType {
 pub type RegistersArray64 = [RegisterValue64; REGISTERS_COUNT];
 pub type RegisterValue64 = u64;
 
-#[derive(Debug, Eq, Display, From, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum SavedBy {
     None,
     Caller,
     Callee,
 }
 
-#[derive(Debug, Eq, From, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Registers64 {
     pub pc: RegisterValue64,
     pub array: RegistersArray64,

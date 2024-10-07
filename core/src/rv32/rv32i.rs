@@ -13,21 +13,3 @@
 // See the Licence for the specific language governing permissions and
 // limitations under the Licence.
 //
-
-use crate::hart::SimpleRV32IHart;
-
-// Init memory as 128MB
-pub const DRAM_SIZE: usize = 1024 * 1024 * 128;
-
-// TODO implement a *true* shareable memory between different processes
-pub struct Machine {
-    pub hart: SimpleRV32IHart,
-}
-
-impl Machine {
-    pub fn new() -> Self {
-        Self {
-            hart: SimpleRV32IHart::new(DRAM_SIZE),
-        }
-    }
-}
